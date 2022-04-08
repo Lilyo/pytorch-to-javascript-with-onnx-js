@@ -1,4 +1,4 @@
-const CANVAS_SIZE = 280;
+const CANVAS_SIZE = 112;
 const CANVAS_SCALE = 0.5;
 
 const canvas = document.getElementById("canvas");
@@ -13,6 +13,9 @@ let lastY = 0;
 // Load our model.
 const sess = new onnx.InferenceSession();
 const loadingModelPromise = sess.loadModel("./onnx_model.onnx");
+
+// MGU
+hidden = new Tensor(new Float32Array(512), "float32")
 
 // Add 'Draw a number here!' to the canvas.
 ctx.lineWidth = 28;
@@ -48,10 +51,11 @@ function drawLine(fromX, fromY, toX, toY) {
 async function updatePredictions() {
   // Get the predictions for the canvas data.
   const imgData = ctx.getImageData(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  const input = new onnx.Tensor(new Float32Array(imgData.data), "float32");
 
-  const outputMap = await sess.run([input]);
-  const outputTensor = outputMap.values().next().value;
+  console.log(hidden);
+  const input = new onnx.Tensor(new Float32Array(imgData.data), "float32");
+  const [outputMap1, outputMap2] = await sess.run([input, hidden]);
+  const outputTensor = outputMap1[1]//.values().next().value;
   const predictions = outputTensor.data;
   const maxPrediction = Math.max(...predictions);
 
@@ -63,6 +67,10 @@ async function updatePredictions() {
         ? "prediction-col top-prediction"
         : "prediction-col";
   }
+  hidden = outputMap2[1]
+//    console.log(outputMap1[1].data);
+//    console.log(new Float32Array(imgData.data));
+//    console.log(outputMap2[1].data);
 }
 
 function canvasMouseDown(event) {
